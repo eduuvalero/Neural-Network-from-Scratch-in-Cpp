@@ -85,27 +85,50 @@ void NeuralNetwork::save(const std::string& path){
     file.write((char*)&numLayers, sizeof(int));
     for (const Layer& l : layers) {
         int rows = l.getWeights().getRows();
-        file.write((char*)&rows, sizeof(int));
+        file.write((const char*)&rows, sizeof(int));
 
         int cols = l.getWeights().getCols();
-        file.write((char*)&cols, sizeof(int));
+        file.write((const char*)&cols, sizeof(int));
 
         Activation act = l.getAct();
-        file.write((char*)&act, sizeof(int));
+        file.write((const char*)&act, sizeof(int));
 
         const std::vector<double>& wData = l.getWeights().getData();
-        file.write((char*)wData.data(), wData.size() * sizeof(double));
+        file.write((const char*)wData.data(), wData.size() * sizeof(double));
 
         const std::vector<double>& bData = l.getBias().getData();
-        file.write((char*)bData.data(), bData.size() * sizeof(double));
+        file.write((const char*)bData.data(), bData.size() * sizeof(double));
     }
 }
 
 void NeuralNetwork::load(const std::string& path){
-    std::ofstream file(path, std::ios::binary);
+    std::ifstream file(path, std::ios::binary);
     if(!file.is_open()){
         throw std::invalid_argument("Can't open file");
     }
 
-    
+    int numLayers;
+    file.read((char*)&numLayers, sizeof(int));
+    for(int i = 0; i<numLayers; i++){
+        int rows, cols;
+        Activation act;
+        file.read((char*)&rows, sizeof(int));
+        file.read((char*)&cols, sizeof(int));
+        file.read((char*)&act, sizeof(int));
+
+        addLayer(cols, rows, (Activation)act);
+
+        Matrix w(rows, cols);
+        std::vector<double> wData(rows * cols);
+        file.read((char*)wData.data(), wData.size() * sizeof(double));
+        w.setData(wData);
+
+        Matrix b(rows, 1);
+        std::vector<double> bData(rows);
+        file.read((char*)wData.data(), bData.size() * sizeof(double));
+        w.setData(bData);
+
+        layers.back().setWeights(w);
+        layers.back().setBias(b);
+    }
 }

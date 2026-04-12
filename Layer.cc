@@ -76,3 +76,6 @@ Matrix Layer::backward(const Matrix& grad, double lr, bool applyActivationDeriva
 Activation Layer::getAct() const { return act; }
 Matrix Layer::getWeights() const{ return W; }
 Matrix Layer::getBias() const{ return b; }
+
+void Layer::setWeights(const Matrix& w){ W = w;  }
+void Layer::setBias(const Matrix& b){ this->b=b; }

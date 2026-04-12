@@ -80,6 +80,8 @@ int Matrix::getRows() const { return rows; };
 
 std::vector<double> Matrix::getData() const { return data; };
 
+void Matrix::setData(const std::vector<double>& d) { data = d; };
+
 double& Matrix::operator()(int i, int j){
 #ifndef NDEBUG
     if (i < 0 || i >= rows || j < 0 || j >= cols) {

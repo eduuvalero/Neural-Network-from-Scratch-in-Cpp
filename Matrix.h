@@ -19,6 +19,8 @@ class Matrix{
         int getCols() const;
         int getRows() const;
         std::vector<double> getData() const;
+        // setter
+        void setData(const std::vector<double>& d);
         // operators
         double& operator()(int i, int j);
         const double& operator()(int i, int j) const;

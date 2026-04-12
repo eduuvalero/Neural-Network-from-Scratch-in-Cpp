@@ -20,6 +20,9 @@ class Layer {
         Activation getAct() const;
         Matrix getWeights() const;
         Matrix getBias() const;
+        // Basic setters
+        void setWeights(const Matrix& w);
+        void setBias(const Matrix& b);
 };
 
 #endif
