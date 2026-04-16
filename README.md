@@ -85,7 +85,7 @@ Matrix XScaled = scaler.fitTransform(X);
 
 ```cpp
 NeuralNetwork model;
-model.addLayer(2, 16, RELU);
+model.addLayer(2, 16, RELU, HE);
 model.addLayer(16, 1, SIGMOID);
 
 int epochs = 5000;
@@ -96,7 +96,7 @@ int shuffleSeed = 42;  // -1 => random each run
 bool logMetrics = true;
 int metricsEvery = 100;
 
-model.train(X, Y, epochs, lr, loss, batchSize, shuffleSeed, logMetrics, metricsEvery);
+model.train(X, Y, epochs, lr, batchSize, loss, shuffleSeed, logMetrics, metricsEvery);
 Matrix pred = model.predict(X);
 ```
 

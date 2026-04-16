@@ -6,7 +6,7 @@
 #include <iostream>
 #include <stdexcept>
 
-void NeuralNetwork::addLayer(int inputs, int outputs, Activation act){
+void NeuralNetwork::addLayer(int inputs, int outputs, Activation act, Inicialization init){
     if (inputs <= 0 || outputs <= 0) {
         throw std::invalid_argument(
             "NeuralNetwork::addLayer invalid dimensions: " +
@@ -24,7 +24,7 @@ void NeuralNetwork::addLayer(int inputs, int outputs, Activation act){
         }
     }
 
-    layers.push_back(Layer(inputs, outputs, act));
+    layers.push_back(Layer(inputs, outputs, act, init));
 }
 
 Matrix NeuralNetwork::forward(const Matrix& X){
