@@ -53,7 +53,7 @@ void NeuralNetwork::backward(const Matrix& grad, double lr, bool canonicalOutput
     }
 }
 
-void NeuralNetwork::train(const Matrix& X, const Matrix& Y, int epochs, double lr, Loss loss, int batchSize, int shuffleSeed, bool logMetrics, int metricsEvery){
+void NeuralNetwork::train(const Matrix& X, const Matrix& Y, int epochs, double lr, int batchSize, Loss loss, int shuffleSeed, bool logMetrics, int metricsEvery){
     if (layers.empty()) {
         throw std::invalid_argument("NeuralNetwork::train invalid state: layers=0");
     }

@@ -16,7 +16,7 @@ Layer::Layer(int inputs, int outputs, Activation act, Inicialization init): W(in
     initWeights();
 
     for (int i = 0; i < outputs; i++){
-        b(i, 0) = 0.0;
+        b(0, i) = 0.0;
     }
 }
 
