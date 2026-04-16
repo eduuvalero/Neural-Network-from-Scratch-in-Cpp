@@ -6,7 +6,7 @@
 #include"Matrix.h"
 #include"Layer.h"
 
-enum Loss { MSE, CROSS_ENTROPY, AUTO };
+enum Loss { MSE, CROSS_ENTROPY, AUTO_LOSS };
 
 class NeuralNetwork{
     private:
@@ -16,7 +16,7 @@ class NeuralNetwork{
         void backward(const Matrix& grad, double lr, bool canonicalOutputGrad = false);
     public:
         void addLayer(int inputs, int outputs, Activation act = NONE);
-        void train(const Matrix& X, const Matrix& Y, int epochs, double lr, Loss loss = AUTO, int batchSize = 0, int shuffleSeed = -1, bool logMetrics = false, int metricsEvery = 1);
+        void train(const Matrix& X, const Matrix& Y, int epochs, double lr, Loss loss = AUTO_LOSS, int batchSize = 0, int shuffleSeed = -1, bool logMetrics = false, int metricsEvery = 1);
         Matrix predict(const Matrix& x);
         void save(const std::string& path);
         void load(const std::string& path);

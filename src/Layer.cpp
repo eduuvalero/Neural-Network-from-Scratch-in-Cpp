@@ -5,6 +5,64 @@
 #include <string>
 #include <stdexcept>
 
+Layer::Layer(int inputs, int outputs, Activation act, Inicialization init): W(inputs, outputs), b(1, outputs), act(act), init(init) {
+    if (inputs <= 0 || outputs <= 0) {
+        throw std::invalid_argument(
+            "Layer::Layer invalid dimensions: " +
+            std::to_string(inputs) + "x" + std::to_string(outputs)
+        );
+    }
+
+    initWeights();
+
+    for (int i = 0; i < outputs; i++){
+        b(i, 0) = 0.0;
+    }
+}
+
+void Layer::initWeights(){
+    switch (init){
+        case HE:
+            initHe();
+            break;
+        case XAVIER:
+            initXavier();
+            break;
+        case AUTO:
+            if(act == RELU || act == LEAKY_RELU || act == NONE){
+                initHe();
+            }
+            else{
+                initXavier();
+            }
+            break;
+    }
+}
+
+void Layer::initHe(){
+    int m = W.getRows();
+    int n = W.getCols();
+    double stddev = sqrt(2.0 / m);
+
+    for (int i = 0; i < m; i++) {
+        for (int j = 0; j < n; j++) {
+            W(i, j) = rand.normal(0.0, stddev);
+        }
+    }
+}
+
+void Layer::initXavier(){
+    int m = W.getRows();
+    int n = W.getCols();
+    double limit = sqrt(6.0 / (m + n));
+
+    for (int i = 0; i < m; i++) {
+        for (int j = 0; j < n; j++) {
+            W(i, j) = rand.uniform(-limit, limit);
+        }
+    }
+}
+
 double Layer::stableSigmoid(double x) {
     if (x >= 0.0) {
         double z = std::exp(-x);
@@ -66,25 +124,6 @@ Matrix Layer::applyActivationGradient(const Matrix& grad) const {
             return grad;
         default:
             return grad;
-    }
-}
-
-Layer::Layer(int inputs, int outputs, Activation act): W(inputs, outputs), b(1, outputs), act(act){
-    if (inputs <= 0 || outputs <= 0) {
-        throw std::invalid_argument(
-            "Layer::Layer invalid dimensions: " +
-            std::to_string(inputs) + "x" + std::to_string(outputs)
-        );
-    }
-
-    std::random_device rd;
-    std::mt19937 gen(rd());
-    std::normal_distribution<double> dist(0.0, 0.1);
-
-    for (int i = 0; i < inputs; i++) {
-        for (int j = 0; j < outputs; j++) {
-            W(i, j) = dist(gen);
-        }
     }
 }
 

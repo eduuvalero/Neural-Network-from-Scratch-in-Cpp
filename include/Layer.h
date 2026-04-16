@@ -2,8 +2,11 @@
 #define _LAYER_H_
 
 #include "Matrix.h"
+#include "Random.h"
 
 enum Activation { RELU, LEAKY_RELU, SIGMOID, TANH, SOFTMAX, NONE };
+
+enum Inicialization { HE, XAVIER, AUTO };
 
 class Layer {
     private:
@@ -13,12 +16,19 @@ class Layer {
         Matrix A;
         Matrix X;
         Activation act;
+        Inicialization init;
+        Random rand;
+        void initWeights();
+        void initHe();
+        void initXavier();
         Matrix applyActivation(const Matrix& z) const;
         Matrix applyActivationGradient(const Matrix& grad) const;
         Matrix applySoftmaxJacobian(const Matrix& grad) const;
         static double stableSigmoid(double x);
+
+
     public:
-        Layer(int inputs=1, int outputs=1, Activation act=NONE);
+        Layer(int inputs=1, int outputs=1, Activation act=NONE, Inicialization init= AUTO);
         Matrix forward(const Matrix& x);
         Matrix backward(const Matrix& grad, double lr, bool applyActivationDerivative = true);
         // Basic getters

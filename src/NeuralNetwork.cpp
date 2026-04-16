@@ -88,7 +88,7 @@ void NeuralNetwork::train(const Matrix& X, const Matrix& Y, int epochs, double l
     int effectiveBatchSize = TrainingUtils::resolveEffectiveBatchSize(batchSize, n, "NeuralNetwork::train");
 
     Loss actualLoss = loss;
-    if (loss == AUTO) {
+    if (loss == AUTO_LOSS) {
         Activation lastAct = layers.back().getAct();
         if (lastAct == SOFTMAX) {
             actualLoss = CROSS_ENTROPY;

@@ -7,7 +7,7 @@ This project is a simple and compact machine learning "library" implemented in m
 - Backpropagation training with MSE and Cross-Entropy options in function of the activation functions.
 - Full-batch and mini-batch gradient descent.
 - Optional per-epoch training metrics logging.
-- Built-in metrics utilities (`MSE`, `MAE`, `RMSE`, `R2`, `accuracy`, `cross-entropy`).
+- Built-in metrics utilities (`MSE`, `MAE`, `RMSE`, `R2`, `acppuracy`, `cross-entropy`).
 - CSV data loading utilities.
 - A standardization utility (`StandardScaler`).
 
@@ -39,7 +39,7 @@ make run
 Build with a custom entry point file:
 
 ```bash
-make MAIN=your_main.cc
+make MAIN=your_main.cpp
 ```
 
 Useful targets:
@@ -125,7 +125,7 @@ double mse = Metrics::mse(yTrue, yPred);
 double mae = Metrics::mae(yTrue, yPred);
 double rmse = Metrics::rmse(yTrue, yPred);
 double r2 = Metrics::r2Score(yTrue, yPred);
-double acc = Metrics::accuracy(yTrue, yPred);
+double acpp = Metrics::acppuracy(yTrue, yPred);
 double ce = Metrics::crossEntropy(yTrue, yPred);
 ```
 
@@ -165,7 +165,7 @@ CSV format expected by `DataLoader::loadDataset`:
 ## Project Architecture
 
 ```text
-neural-network-from-scratch/
+Neural-Network-from-Scratch-in-Cpp/
 ├── include/
 │   ├── Matrix.h
 │   ├── Layer.h
@@ -175,13 +175,16 @@ neural-network-from-scratch/
 │   ├── StandardScaler.h
 │   └── LinearRegression.h
 ├── src/
-│   ├── Matrix.cc
-│   ├── Layer.cc
-│   ├── Metrics.cc
-│   ├── NeuralNetwork.cc
-│   ├── DataLoader.cc
-│   ├── StandardScaler.cc
-│   └── LinearRegression.cc
+│   ├── utils/
+│   │   ├── Random.cpp
+│   │   └── TrainingUtils.cpp
+│   ├── Matrix.cpp
+│   ├── Layer.cpp
+│   ├── Metrics.cpp
+│   ├── NeuralNetwork.cpp
+│   ├── DataLoader.cpp
+│   ├── StandardScaler.cpp
+│   └── LinearRegression.cpp
 ├── Makefile
 └── README.md
 ```
