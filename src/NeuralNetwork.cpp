@@ -101,7 +101,7 @@ void NeuralNetwork::train(const Matrix& X, const Matrix& Y, int epochs, double l
     Activation outputActivation = layers.back().getAct();
     if (actualLoss == CROSS_ENTROPY && !supportsCanonicalCrossEntropyGradient(outputActivation)) {
         throw std::invalid_argument(
-            "NeuralNetwork::train CROSS_ENTROPY requires SIGMOID or SOFTMAX output activation"
+            "NeuralNetwork::train CROSS_ENTROPY requires or SOFTMAX output activation"
         );
     }
 

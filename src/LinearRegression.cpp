@@ -77,8 +77,8 @@ void LinearRegression::train(const Matrix& X, const Matrix& Y, int epochs, doubl
             double r2 = Metrics::r2Score(Y, epochPred);
 
             std::cout << "[LinearRegression] epoch " << (e + 1) << "/" << epochs
-                      << " mse=" << mse << " mae=" << mae
-                      << " rmse=" << rmse << " r2=" << r2 << "\n";
+                        << " mse=" << mse << " mae=" << mae
+                        << " rmse=" << rmse << " r2=" << r2 << "\n";
         }
     }
 
