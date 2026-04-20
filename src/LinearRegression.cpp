@@ -10,7 +10,7 @@
 
 LinearRegression::LinearRegression(int inputs):
     weights(inputs, 1),
-    bias(1, 1),
+    bias(0.0),
     hasCompileConfig(false),
     compiledLr(0.01),
     compiledBatchSize(0),
@@ -25,7 +25,6 @@ LinearRegression::LinearRegression(int inputs):
     for (int i = 0; i < inputs; i++) {
         weights(i, 0) = rng.uniform(-0.01, 0.01);
     }
-    bias(0, 0) = 0.0;
 }
 
 void LinearRegression::compile(double lr, int batchSize, int shuffleSeed, bool logMetrics, int metricsEvery) {
@@ -54,7 +53,7 @@ void LinearRegression::fit(const Matrix& X, const Matrix& Y, int epochs) {
 
 Matrix LinearRegression::forwardLinear(const Matrix& X) const {
     Matrix pred = X.dot(weights);
-    double b = bias(0, 0);
+    double b = bias;
     for (int i = 0; i < pred.getRows(); i++) {
         pred(i, 0) += b;
     }
@@ -127,7 +126,7 @@ void LinearRegression::train(const Matrix& X, const Matrix& Y, int epochs, doubl
             double gradB = sumColumnVector(grad);
 
             weights = weights - (gradW * lr);
-            bias(0, 0) -= lr * gradB;
+            bias -= lr * gradB;
         }
 
         bool shouldLog = logMetrics && (((e + 1) % metricsEvery == 0) || (e == epochs - 1));
@@ -165,8 +164,7 @@ void LinearRegression::save(const std::string& path){
     const std::vector<double>& wData = weights.getData();
     file.write((const char*)wData.data(), wData.size() * sizeof(double));
 
-    double bData = bias(0, 0);
-    file.write((const char*)&bData, sizeof(double));
+    file.write((const char*)&bias, sizeof(double));
 }
 
 void LinearRegression::load(const std::string& path){
@@ -182,7 +180,5 @@ void LinearRegression::load(const std::string& path){
     file.read((char*)wData.data(), wData.size() * sizeof(double));
     weights.setData(wData);
 
-    double bData;
-    file.read((char*)&bData, sizeof(double));
-    bias(0, 0) = bData;
+    file.read((char*)&bias, sizeof(double));
 }

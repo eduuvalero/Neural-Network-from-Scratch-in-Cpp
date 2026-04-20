@@ -8,7 +8,7 @@
 class LinearRegression{
     private:
         Matrix weights;
-        Matrix bias;
+        double bias;
         bool hasCompileConfig;
         double compiledLr;
         int compiledBatchSize;
