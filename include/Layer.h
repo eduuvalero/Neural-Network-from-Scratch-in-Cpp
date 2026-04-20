@@ -33,6 +33,7 @@ class Layer {
         Matrix backward(const Matrix& grad, double lr, bool applyActivationDerivative = true);
         // Basic getters
         Activation getAct() const { return act; }
+        Inicialization getInit() const { return init; }
         Matrix getWeights() const { return W; }
         Matrix getBias() const { return b; }
         int getOutputSize() const { return b.getCols(); }

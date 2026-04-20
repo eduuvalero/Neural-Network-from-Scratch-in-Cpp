@@ -1,5 +1,6 @@
 #include "LinearRegression.h"
 #include "Metrics.h"
+#include "Random.h"
 #include "TrainingUtils.h"
 
 #include <fstream>
@@ -7,17 +8,73 @@
 #include <stdexcept>
 #include <string>
 
-LinearRegression::LinearRegression(int inputs, int outputs){
-    if (inputs <= 0 || outputs <= 0) {
-        throw std::invalid_argument("LinearRegression::LinearRegression invalid dimensions: " + std::to_string(inputs) + "x" + std::to_string(outputs));
+LinearRegression::LinearRegression(int inputs):
+    weights(inputs, 1),
+    bias(1, 1),
+    hasCompileConfig(false),
+    compiledLr(0.01),
+    compiledBatchSize(0),
+    compiledShuffleSeed(-1),
+    compiledLogMetrics(false),
+    compiledMetricsEvery(1) {
+    if (inputs <= 0) {
+        throw std::invalid_argument("LinearRegression::LinearRegression invalid input dimension: " + std::to_string(inputs));
     }
 
-    neuron = Layer(inputs, outputs, NONE);
+    Random rng;
+    for (int i = 0; i < inputs; i++) {
+        weights(i, 0) = rng.uniform(-0.01, 0.01);
+    }
+    bias(0, 0) = 0.0;
+}
+
+void LinearRegression::compile(double lr, int batchSize, int shuffleSeed, bool logMetrics, int metricsEvery) {
+    if (lr <= 0.0) {
+        throw std::invalid_argument("LinearRegression::compile learning rate must be > 0");
+    }
+    if (logMetrics && metricsEvery <= 0) {
+        throw std::invalid_argument("LinearRegression::compile metricsEvery must be > 0 when logMetrics is enabled");
+    }
+
+    compiledLr = lr;
+    compiledBatchSize = batchSize;
+    compiledShuffleSeed = shuffleSeed;
+    compiledLogMetrics = logMetrics;
+    compiledMetricsEvery = metricsEvery;
+    hasCompileConfig = true;
+}
+
+void LinearRegression::fit(const Matrix& X, const Matrix& Y, int epochs) {
+    if (!hasCompileConfig) {
+        throw std::logic_error("LinearRegression::fit compile() must be called before fit()");
+    }
+
+    train(X, Y, epochs, compiledLr, compiledBatchSize, compiledShuffleSeed, compiledLogMetrics, compiledMetricsEvery);
+}
+
+Matrix LinearRegression::forwardLinear(const Matrix& X) const {
+    Matrix pred = X.dot(weights);
+    double b = bias(0, 0);
+    for (int i = 0; i < pred.getRows(); i++) {
+        pred(i, 0) += b;
+    }
+    return pred;
+}
+
+double LinearRegression::sumColumnVector(const Matrix& vec) const {
+    if (vec.getCols() != 1) {
+        throw std::invalid_argument("LinearRegression::sumColumnVector expected a column vector");
+    }
+
+    double sum = 0.0;
+    for (int i = 0; i < vec.getRows(); i++) {
+        sum += vec(i, 0);
+    }
+    return sum;
 }
 
 void LinearRegression::train(const Matrix& X, const Matrix& Y, int epochs, double lr, int batchSize, int shuffleSeed, bool logMetrics, int metricsEvery){
-    int expectedInputs = neuron.getWeights().getRows();
-    int expectedOutputs = neuron.getOutputSize();
+    int expectedInputs = weights.getRows();
 
     if (epochs <= 0) {
         throw std::invalid_argument("LinearRegression::train epochs must be > 0");
@@ -35,8 +92,8 @@ void LinearRegression::train(const Matrix& X, const Matrix& Y, int epochs, doubl
 
     int n = X.getRows();
 
-    if (Y.getRows() != n || Y.getCols() != expectedOutputs) {
-        throw std::invalid_argument("LinearRegression::train label dimension mismatch: " + std::to_string(Y.getRows()) + "x" + std::to_string(Y.getCols()) + " | expected " + std::to_string(n) + "x" + std::to_string(expectedOutputs));
+    if (Y.getRows() != n || Y.getCols() != 1) {
+        throw std::invalid_argument("LinearRegression::train label dimension mismatch: " + std::to_string(Y.getRows()) + "x" + std::to_string(Y.getCols()) + " | expected " + std::to_string(n) + "x1");
     }
 
     if (n <= 0) {
@@ -63,14 +120,19 @@ void LinearRegression::train(const Matrix& X, const Matrix& Y, int epochs, doubl
             Matrix yBatch = yShuffled.vslice(start, end);
             int batchN = xBatch.getRows();
 
-            Matrix pred = neuron.forward(xBatch);
+            Matrix pred = forwardLinear(xBatch);
             Matrix grad = (pred - yBatch) * (2.0 / batchN);
-            neuron.backward(grad, lr);
+
+            Matrix gradW = xBatch.transpose().dot(grad);
+            double gradB = sumColumnVector(grad);
+
+            weights = weights - (gradW * lr);
+            bias(0, 0) -= lr * gradB;
         }
 
         bool shouldLog = logMetrics && (((e + 1) % metricsEvery == 0) || (e == epochs - 1));
         if (shouldLog) {
-            Matrix epochPred = neuron.forward(X);
+            Matrix epochPred = forwardLinear(X);
             double mse = Metrics::mse(Y, epochPred);
             double mae = Metrics::mae(Y, epochPred);
             double rmse = Metrics::rmse(Y, epochPred);
@@ -85,86 +147,42 @@ void LinearRegression::train(const Matrix& X, const Matrix& Y, int epochs, doubl
 }
 
 Matrix LinearRegression::predict(const Matrix& x){
-    int expectedInputs = neuron.getWeights().getRows();
+    int expectedInputs = weights.getRows();
 
     if (x.getCols() != expectedInputs) {
         throw std::invalid_argument("LinearRegression::predict input dimension mismatch: " + std::to_string(x.getRows()) + "x" + std::to_string(x.getCols()) + " | expected Nx" + std::to_string(expectedInputs));
     }
 
-    return neuron.forward(x);
+    return forwardLinear(x);
 }
 
 void LinearRegression::save(const std::string& path){
     std::ofstream file(path, std::ios::binary);
-    if(!file.is_open()){
-        throw std::invalid_argument("LinearRegression::save open file error: " + path);
-    }
 
-    int inputs = neuron.getWeights().getRows();
+    int inputs = weights.getRows();
     file.write((const char*)&inputs, sizeof(int));
-    if(!file){
-        throw std::runtime_error("LinearRegression::save write error: rows");
-    }
 
-    int outputs = neuron.getWeights().getCols();
-    file.write((const char*)&outputs, sizeof(int));
-    if(!file){
-        throw std::runtime_error("LinearRegression::save write error: cols");
-    }
-
-    Matrix weights = neuron.getWeights();
     const std::vector<double>& wData = weights.getData();
     file.write((const char*)wData.data(), wData.size() * sizeof(double));
-    if(!file){
-        throw std::runtime_error("LinearRegression::save write error: weights");
-    }
 
-    Matrix bias = neuron.getBias();
-    const std::vector<double>& bData = bias.getData();
-    file.write((const char*)bData.data(), bData.size() * sizeof(double));
-    if(!file){
-        throw std::runtime_error("LinearRegression::save write error: bias");
-    }
+    double bData = bias(0, 0);
+    file.write((const char*)&bData, sizeof(double));
 }
 
 void LinearRegression::load(const std::string& path){
     std::ifstream file(path, std::ios::binary);
-    if(!file.is_open()){
-        throw std::invalid_argument("LinearRegression::load open file error: " + path);
+    if (!file) {
+        throw std::runtime_error("LinearRegression::load failed to open file: " + path);
     }
-
     
-    int inputs, outputs;
+    int inputs;
     file.read((char*)&inputs, sizeof(int));
-    if(!file){
-        throw std::runtime_error("LinearRegression::load invalid model file: rows");
-    }
-    file.read((char*)&outputs, sizeof(int));
-    if(!file){
-        throw std::runtime_error("LinearRegression::load invalid model file: cols");
-    }
-    if(inputs <= 0 || outputs <= 0){
-        throw std::runtime_error("LinearRegression::load dimension mismatch: " + std::to_string(inputs) + "x" + std::to_string(outputs) + " | expected rows>0 and cols>0");
-    }
 
-    neuron = Layer(inputs, outputs, NONE);
-
-    Matrix w(inputs, outputs);
-    std::vector<double> wData(inputs * outputs);
+    std::vector<double> wData(inputs);
     file.read((char*)wData.data(), wData.size() * sizeof(double));
-    if(!file){
-        throw std::runtime_error("LinearRegression::load invalid model file: weights");
-    }
-    w.setData(wData);
+    weights.setData(wData);
 
-    Matrix b(1, outputs);
-    std::vector<double> bData(outputs);
-    file.read((char*)bData.data(), bData.size() * sizeof(double));
-    if(!file){
-        throw std::runtime_error("LinearRegression::load invalid model file: bias");
-    }
-    b.setData(bData);
-
-    neuron.setWeights(w);
-    neuron.setBias(b);
+    double bData;
+    file.read((char*)&bData, sizeof(double));
+    bias(0, 0) = bData;
 }

@@ -1,50 +1,47 @@
-CXX ?= g++
-STD ?= c++17
-WARN ?= -Wall -Wextra -Wpedantic
-OPT ?= -O2
-CPPFLAGS ?= -Iinclude
-CXXFLAGS ?= -std=$(STD) $(WARN) $(OPT)
+CC = g++
+OPTS ?= -O2 -Wall -Wextra -Wpedantic -std=c++17
+INCLUDES ?= -Iinclude
 
 MAIN ?= main.cpp
-SRC_DIR := src
-BUILD_DIR := build
+BUILD_DIR ?= build
 TARGET ?= $(BUILD_DIR)/app
 
-LIB_SRCS := \
-	$(SRC_DIR)/DataLoader.cpp \
-	$(SRC_DIR)/utils/Random.cpp \
-	$(SRC_DIR)/Layer.cpp \
-	$(SRC_DIR)/LinearRegression.cpp \
-	$(SRC_DIR)/Metrics.cpp \
-	$(SRC_DIR)/Matrix.cpp \
-	$(SRC_DIR)/NeuralNetwork.cpp \
-	$(SRC_DIR)/StandardScaler.cpp \
-	$(SRC_DIR)/utils/TrainingUtils.cpp
+OBJS = \
+	$(BUILD_DIR)/src/DataLoader.o \
+	$(BUILD_DIR)/src/utils/Random.o \
+	$(BUILD_DIR)/src/Layer.o \
+	$(BUILD_DIR)/src/LinearRegression.o \
+	$(BUILD_DIR)/src/Metrics.o \
+	$(BUILD_DIR)/src/Matrix.o \
+	$(BUILD_DIR)/src/NeuralNetwork.o \
+	$(BUILD_DIR)/src/StandardScaler.o \
+	$(BUILD_DIR)/src/utils/TrainingUtils.o
 
-SRCS := $(LIB_SRCS) $(MAIN)
-OBJS := $(patsubst %.cpp,$(BUILD_DIR)/%.o,$(SRCS))
+MAIN_OBJ = $(BUILD_DIR)/$(basename $(MAIN)).o
 
 .PHONY: all run clean debug release
 
 all: $(TARGET)
 
-$(TARGET): $(OBJS) | $(BUILD_DIR)
-	$(CXX) $(OBJS) -o $@
-
-$(BUILD_DIR):
-	mkdir -p $(BUILD_DIR)
-
-$(BUILD_DIR)/%.o: %.cpp | $(BUILD_DIR)
+$(TARGET): $(OBJS) $(MAIN_OBJ)
 	@mkdir -p $(dir $@)
-	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c $< -o $@
+	$(CC) $(OPTS) $(OBJS) $(MAIN_OBJ) -o $@
 
-run: $(TARGET)
+$(BUILD_DIR)/%.o: %.cpp
+	@mkdir -p $(dir $@)
+	$(CC) $(INCLUDES) $(OPTS) -c $< -o $@
+
+$(BUILD_DIR)/%.o: %.cc
+	@mkdir -p $(dir $@)
+	$(CC) $(INCLUDES) $(OPTS) -c $< -o $@
+
+run: all
 	./$(TARGET)
 
-debug: OPT := -O0 -g
+debug: OPTS := -O0 -g -Wall -Wextra -Wpedantic -std=c++17
 debug: clean all
 
-release: OPT := -O3
+release: OPTS := -O3 -Wall -Wextra -Wpedantic -std=c++17
 release: clean all
 
 clean:
