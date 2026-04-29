@@ -54,10 +54,8 @@ void NeuralNetwork::saveCheckpoint(const std::string& checkpointDir,
         throw std::runtime_error("NeuralNetwork::train checkpoint directory error: " + dirPath.string());
     }
 
-    std::string baseName = "epoch_" + std::to_string(epoch);
-    std::filesystem::path basePath = dirPath / baseName;
-    std::string modelPath = basePath.string() + ".model";
-    std::string ckptPath = basePath.string() + ".ckpt";
+    std::string modelPath = checkpointDir + ".model";
+    std::string ckptPath = checkpointDir + ".ckpt";
 
     save(modelPath);
 
