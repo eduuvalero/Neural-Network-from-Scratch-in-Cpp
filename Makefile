@@ -13,6 +13,7 @@ OBJS = \
 	$(BUILD_DIR)/src/LinearRegression.o \
 	$(BUILD_DIR)/src/Metrics.o \
 	$(BUILD_DIR)/src/Matrix.o \
+	$(BUILD_DIR)/src/Optimizer.o \
 	$(BUILD_DIR)/src/NeuralNetwork.o \
 	$(BUILD_DIR)/src/StandardScaler.o \
 	$(BUILD_DIR)/src/utils/TrainingUtils.o

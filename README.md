@@ -9,10 +9,12 @@ For now, the project includes:
 - A multiple layer perceptron (MLP) neural netowrk totally customizable allowing the creation of multiple layers and the use of the activation functions: `ReLU`, `Leaky ReLU`,`Sigmoid`, `Tanh`, `Sigmoid`, `Softmax`.
 - A lightweight `LinearRegression` model using the same core building blocks.
 - Backpropagation training with MSE and Cross-Entropy options in function of the activation functions.
-- Full-batch and mini-batch gradient descent.
+- Pluggable optimizers (`SGD`, `Adam`) with full-batch and mini-batch training.
+- Dropout regularization during training.
 - Optional per-epoch training metrics logging.
 - Built-in metrics utilities (`MSE`, `MAE`, `RMSE`, `R2`, `acppuracy`, `cross-entropy`).
-- Capability of saving/loading a model, 
+- Versioned model serialization (dropout + optimizer state).
+- Checkpoint saving during training (.ckpy + .model).
 - CSV data loading utilities.
 - A standardization utility (`StandardScaler`).
 > The project is still **in progress**, but due to upcoming classes and exams, development may slow down or be temporarily on hold.
@@ -57,8 +59,6 @@ Useful targets:
 
 Your output depends on the model architecture, dataset, and training settings defined in your entry point.
 
----
-
 ## Input File Format
 
 CSV format expected by `DataLoader::loadDataset`:
@@ -82,6 +82,7 @@ Neural-Network-from-Scratch-in-Cpp/
 ├── include/
 │   ├── Matrix.h
 │   ├── Layer.h
+│   ├── Optimizer.h
 │   ├── Metrics.h
 │   ├── NeuralNetwork.h
 │   ├── DataLoader.h
@@ -93,6 +94,7 @@ Neural-Network-from-Scratch-in-Cpp/
 │   │   └── TrainingUtils.cpp
 │   ├── Matrix.cpp
 │   ├── Layer.cpp
+│   ├── Optimizer.cpp
 │   ├── Metrics.cpp
 │   ├── NeuralNetwork.cpp
 │   ├── DataLoader.cpp
@@ -105,7 +107,8 @@ Neural-Network-from-Scratch-in-Cpp/
 ### Main modules
 
 - `Matrix`: matrix operations (`dot`, transpose, element-wise ops, slicing, softmax, one-hot, concatenation, `sum/mean/var/std` reductions, `exp/log`).
-- `Layer`: fully connected layer (`W`, `b`) + activation and gradient propagation.
+- `Layer`: fully connected layer (`W`, `b`) + activation, dropout, and gradient propagation.
+- `Optimizer`: optimizer interface with `SGD` and `Adam` implementations.
 - `NeuralNetwork`: stack of layers, forward pass, backpropagation, training loop, save/load.
 - `Dense`: simple layer descriptor for `NeuralNetwork::add(...)` in Sequential-style definitions.
 - `DataLoader`: CSV parser and dataset split utilities.
@@ -172,15 +175,26 @@ $$
 \nabla_{Z^{[L]}} = \frac{1}{N}(\hat{Y} - Y)
 $$
 
-### 4) Backpropagation and update
+### 4) Backpropagation and optimizer update
 
-Each layer computes gradients for weights, bias and previous activations, then applies gradient descent:
+Each layer computes gradients for weights, bias and previous activations, then the selected optimizer applies the parameter update.
+For `SGD` the update is:
 
 $$
 W \leftarrow W - \eta \nabla_W, \quad b \leftarrow b - \eta \nabla_b
 $$
 
-where $\eta$ is the learning rate.
+where $\eta$ is the learning rate. `Adam` applies adaptive per-parameter scaling with bias-corrected first and second moments.
+
+### 5) Dropout (training only)
+
+When a layer uses dropout, activations are randomly zeroed during training using inverted dropout:
+
+$$
+	ilde{A} = A \odot M, \quad M_{ij} \in \{0, \tfrac{1}{1-p}\}
+$$
+
+where $p$ is the dropout rate. During inference, dropout is disabled.
 
 ---
 
@@ -259,7 +273,7 @@ int main() {
 
 ## Current Limitations
 
-- No advanced optimizers (Adam, RMSProp, momentum).
-- No regularization layers (dropout, batch normalization).
+- No optimizers beyond SGD/Adam (e.g., RMSProp, momentum).
+- No regularization layers beyond dropout (e.g., batch normalization).
 - No automatic train/validation splitting.
 - Training metrics logging is console-based (there is no structured history object yet).

@@ -1,16 +1,20 @@
 #include "Layer.h"
+#include "Optimizer.h"
 
 #include <cmath>
 #include <random>
 #include <string>
 #include <stdexcept>
 
-Layer::Layer(int inputs, int outputs, Activation act, Inicialization init): W(inputs, outputs), b(1, outputs), act(act), init(init) {
+Layer::Layer(int inputs, int outputs, Activation act, Inicialization init, double dropoutRate): W(inputs, outputs), b(1, outputs), act(act), init(init), dropoutRate(dropoutRate) {
     if (inputs <= 0 || outputs <= 0) {
         throw std::invalid_argument(
             "Layer::Layer invalid dimensions: " +
             std::to_string(inputs) + "x" + std::to_string(outputs)
         );
+    }
+    if (dropoutRate < 0.0 || dropoutRate >= 1.0) {
+        throw std::invalid_argument("Layer::Layer dropout must be in [0, 1)");
     }
 
     initWeights();
@@ -127,7 +131,7 @@ Matrix Layer::applyActivationGradient(const Matrix& grad) const {
     }
 }
 
-Matrix Layer::forward(const Matrix& x){
+Matrix Layer::forward(const Matrix& x, bool training){
     if (x.getCols() != W.getRows()) {
         throw std::invalid_argument(
             "Layer::forward input dimension mismatch: " +
@@ -145,13 +149,26 @@ Matrix Layer::forward(const Matrix& x){
     }
 
     A = applyActivation(Z);
+    if (dropoutRate > 0.0) {
+        if (training) {
+            dropoutMask = Matrix(A.getRows(), A.getCols());
+            double keepScale = 1.0 / (1.0 - dropoutRate);
+            for (int i = 0; i < A.getRows(); i++) {
+                for (int j = 0; j < A.getCols(); j++) {
+                    double r = rand.uniform(0.0, 1.0);
+                    dropoutMask(i, j) = (r >= dropoutRate) ? keepScale : 0.0;
+                }
+            }
+            A = A * dropoutMask;
+        }
+        else {
+            dropoutMask = Matrix();
+        }
+    }
     return A;
 }
 
-Matrix Layer::backward(const Matrix& grad, double lr, bool applyActivationDerivative){
-    if (lr <= 0.0) {
-        throw std::invalid_argument("Layer::backward learning rate must be > 0");
-    }
+Matrix Layer::backward(const Matrix& grad, Optimizer& optimizer, int layerIndex, bool applyActivationDerivative){
     if (X.getRows() == 0 || Z.getRows() == 0) {
         throw std::logic_error("Layer::backward called before forward");
     }
@@ -163,14 +180,21 @@ Matrix Layer::backward(const Matrix& grad, double lr, bool applyActivationDeriva
         );
     }
 
-    Matrix localGrad = applyActivationDerivative ? applyActivationGradient(grad) : grad;
+    Matrix incomingGrad = grad;
+    if (dropoutRate > 0.0) {
+        if (dropoutMask.getRows() != grad.getRows() || dropoutMask.getCols() != grad.getCols()) {
+            throw std::logic_error("Layer::backward missing dropout mask");
+        }
+        incomingGrad = incomingGrad * dropoutMask;
+    }
+
+    Matrix localGrad = applyActivationDerivative ? applyActivationGradient(incomingGrad) : incomingGrad;
 
     Matrix dW = X.transpose().dot(localGrad);
     Matrix db = localGrad.sum(0);
     Matrix dX = localGrad.dot(W.transpose());
 
-    W = W - dW * lr;
-    b = b - db * lr;
+    optimizer.update(layerIndex, W, b, dW, db);
 
     return dX;
 }
