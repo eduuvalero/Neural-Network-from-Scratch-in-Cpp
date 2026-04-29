@@ -47,11 +47,11 @@ void NeuralNetwork::saveCheckpoint(const std::string& checkpointDir,
         bool logMetrics,
         int metricsEvery,
         const CheckpointMetrics& metrics) {
-    std::filesystem::path dirPath = checkpointDir.empty() ? std::filesystem::path(".") : std::filesystem::path(checkpointDir);
-    std::error_code ec;
-    std::filesystem::create_directories(dirPath, ec);
-    if (ec) {
-        throw std::runtime_error("NeuralNetwork::train checkpoint directory error: " + dirPath.string());
+
+    std::filesystem::path p(checkpointDir);
+    std::filesystem::path dir = p.parent_path();
+    if (!dir.empty() && !std::filesystem::exists(dir)) {
+        std::filesystem::create_directories(dir); 
     }
 
     std::string modelPath = checkpointDir + ".model";
